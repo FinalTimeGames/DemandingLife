@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demanding Life | Finaltime Studios</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&family=Montserrat:wght@900&family=VT323&display=swap');
+
+        :root {
+            --bg-dark: #050505;
+            --brand-red: #dc2626;
+            --glass: rgba(15, 15, 15, 0.8);
+            
+            /* Frequencies Colors */
+            --col-bass: #ef4444;    /* Red - Graves */
+            --col-lowmid: #facc15;  /* Yellow - Medios Graves */
+            --col-highmid: #3b82f6; /* Blue - Medios Agudos */
+            --col-treble: #a855f7;  /* Purple - Agudos */
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+
+        body {
+            background-color: var(--bg-dark); color: #fff;
+            font-family: 'Inter', sans-serif; overflow: hidden;
+            width: 100vw; height: 100vh;
+        }
+
+        /* --- BACKGROUND ART --- */
+        #game-bg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: url('roof-bg.jpg') center/cover no-repeat;
+            filter: brightness(0.3) contrast(1.2) grayscale(0.2);
+            z-index: 1; transition: filter 0.1s;
+        }
+        .bg-pulse { filter: brightness(0.6) contrast(1.4) grayscale(0) !important; }
+
+        /* --- WATERMARK --- */
+        .watermark { position: absolute; bottom: 15px; right: 20px; font-family: 'Montserrat', sans-serif; font-size: 0.8rem; font-weight: 900; letter-spacing: 2px; color: rgba(255,255,255,0.2); z-index: 999; pointer-events: none; text-transform: uppercase; }
+        .watermark span { color: rgba(220, 38, 38, 0.4); }
+
+        /* --- VIEWS --- */
+        .view { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        .view.active { display: flex; animation: fadeIn 0.5s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* --- INTRO NARRATIVE --- */
+        #view-intro { background: #000; z-index: 100; padding: 20px; text-align: center; }
+        .intro-text { font-family: 'VT323', monospace; font-size: 2rem; max-width: 800px; line-height: 1.5; color: #aaa; margin-bottom: 40px; text-shadow: 0 0 10px rgba(255,255,255,0.2); }
+        .intro-text span { color: var(--brand-red); }
+        .btn-epic { font-family: 'Montserrat', sans-serif; background: transparent; border: 2px solid var(--brand-red); color: var(--brand-red); padding: 15px 40px; font-size: 1.2rem; font-weight: 900; letter-spacing: 3px; cursor: pointer; transition: all 0.3s; box-shadow: 0 0 15px rgba(220, 38, 38, 0.2); }
+        .btn-epic:hover { background: var(--brand-red); color: #fff; box-shadow: 0 0 30px rgba(220, 38, 38, 0.6); transform: scale(1.05); }
+
+        /* --- HOME (TRACKLIST) --- */
+        .home-container { background: var(--glass); backdrop-filter: blur(10px); border: 1px solid #333; padding: 40px; border-radius: 8px; width: 90%; max-width: 600px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+        .home-title { font-family: 'Montserrat', sans-serif; font-size: 3rem; font-weight: 900; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 2px; }
+        .home-subtitle { font-size: 0.9rem; color: #888; margin-bottom: 30px; letter-spacing: 1px; }
+        
+        .upload-zone { border: 2px dashed #555; padding: 30px; border-radius: 8px; transition: all 0.3s; cursor: pointer; margin-bottom: 20px; background: rgba(0,0,0,0.4); }
+        .upload-zone:hover, .upload-zone.drag-over { border-color: var(--brand-red); background: rgba(220, 38, 38, 0.1); }
+        input[type="file"] { display: none; }
+        
+        .track-list { display: flex; flex-direction: column; gap: 10px; max-height: 250px; overflow-y: auto; text-align: left; }
+        .track-item { background: #111; border: 1px solid #333; padding: 15px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; }
+        .track-item:hover { border-color: #fff; background: #222; }
+        .track-play-btn { background: #fff; color: #000; border: none; padding: 6px 15px; font-weight: bold; border-radius: 4px; cursor: pointer; }
+
+        /* --- GAMEPLAY HUD --- */
+        #view-game { justify-content: flex-start; }
+        .game-hud { width: 100%; max-width: 800px; display: flex; justify-content: space-between; align-items: center; padding: 20px; z-index: 20; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); }
+        .hud-stats { display: flex; gap: 30px; font-family: 'Montserrat', sans-serif; }
+        .stat-box { display: flex; flex-direction: column; }
+        .stat-label { font-size: 0.7rem; color: #888; letter-spacing: 1px; text-transform: uppercase; }
+        .stat-value { font-size: 1.8rem; font-weight: 900; }
+        .hud-controls button { background: transparent; border: 1px solid #555; color: #fff; padding: 8px 15px; cursor: pointer; font-weight: bold; border-radius: 4px; transition: 0.2s; }
+        .hud-controls button:hover { background: #fff; color: #000; }
+
+        /* --- CANVAS --- */
+        #gameCanvas { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 600px; height: 100%; z-index: 15; }
+        
+        /* Keys Helper */
+        .key-hints { position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); display: flex; width: 100%; max-width: 600px; z-index: 20; pointer-events: none;}
+        .key-hint { flex: 1; text-align: center; font-family: 'Montserrat', sans-serif; font-weight: 900; font-size: 1.5rem; opacity: 0.3; }
+
+        /* Glitch Effect on Miss */
+        .glitch-effect { animation: glitch 0.2s cubic-bezier(.25, .46, .45, .94) both infinite; }
+        @keyframes glitch { 
+            0% { transform: translate(0) }
+            20% { transform: translate(-5px, 5px) }
+            40% { transform: translate(-5px, -5px) }
+            60% { transform: translate(5px, 5px) }
+            80% { transform: translate(5px, -5px) }
+            100% { transform: translate(0) }
+        }
+
+        /* --- PAUSE / END OVERLAY --- */
+        .overlay-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 50; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 20px; backdrop-filter: blur(5px); }
+        .overlay-menu.active { display: flex; }
+        .overlay-title { font-family: 'Montserrat', sans-serif; font-size: 3rem; font-weight: 900; color: #fff; }
+        .overlay-btn { background: #fff; color: #000; border: none; padding: 12px 30px; font-size: 1.1rem; font-weight: bold; cursor: pointer; border-radius: 4px; text-transform: uppercase; transition: 0.2s; }
+        .overlay-btn:hover { background: var(--brand-red); color: #fff; }
+    </style>
+</head>
+<body>
+
+    <div id="game-bg"></div>
+    <div class="watermark">FINALTIME <span>STUDIOS</span></div>
+
+    <main id="view-intro" class="view active">
+        <div class="intro-text" id="introText"></div>
+        <button class="btn-epic" onclick="app.enterHome()">FREEZE TIME & PLAY</button>
+    </main>
+
+    <main id="view-home" class="view">
+        <div class="home-container">
+            <div class="home-title">Demanding Life</div>
+            <div class="home-subtitle">Spectrum Synesthesia Engine - Finaltime Studios</div>
+            
+            <label for="audioUpload">
+                <div class="upload-zone" id="dropZone">
+                    <p style="font-weight: 600; font-size: 1.1rem; margin-bottom: 5px;">DROP MP3 FILE HERE</p>
+                    <p style="font-size: 0.8rem; color: #888;">Or click to browse. Learn to isolate frequencies.</p>
+                </div>
+            </label>
+            <input type="file" id="audioUpload" accept="audio/*" onchange="app.handleAudioUpload(event)">
+
+            <div class="track-list" id="trackList">
+                <p style="text-align:center; color:#555; margin-top:20px; font-size:0.9rem;">No tracks loaded yet.</p>
+            </div>
+        </div>
+    </main>
+
+    <main id="view-game" class="view">
+        <div class="game-hud">
+            <div class="hud-stats">
+                <div class="stat-box">
+                    <span class="stat-label">Score</span>
+                    <span class="stat-value" id="ui-score">0000</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">Combo</span>
+                    <span class="stat-value" id="ui-combo" style="color: var(--col-lowmid);">0</span>
+                </div>
+            </div>
+            <div class="hud-controls">
+                <button onclick="game.togglePause()" id="btn-pause">PAUSE</button>
+            </div>
+        </div>
+
+        <canvas id="gameCanvas"></canvas>
+        
+        <div class="key-hints">
+            <div class="key-hint" style="color: var(--col-bass);">D<br><span style="font-size:0.6rem">BASS</span></div>
+            <div class="key-hint" style="color: var(--col-lowmid);">F<br><span style="font-size:0.6rem">L-MID</span></div>
+            <div class="key-hint" style="color: var(--col-highmid);">J<br><span style="font-size:0.6rem">H-MID</span></div>
+            <div class="key-hint" style="color: var(--col-treble);">K<br><span style="font-size:0.6rem">TREBLE</span></div>
+        </div>
+
+        <audio id="gameAudio" style="display:none;"></audio>
+    </main>
+
+    <div id="pauseMenu" class="overlay-menu">
+        <div class="overlay-title">PAUSED</div>
+        <button class="overlay-btn" onclick="game.togglePause()">RESUME</button>
+        <button class="overlay-btn" onclick="game.restartSong()">RESTART</button>
+        <button class="overlay-btn" style="background: transparent; border: 1px solid #fff; color:#fff;" onclick="app.exitToHome()">QUIT TO HOME</button>
+    </div>
+
+    <div id="endMenu" class="overlay-menu">
+        <div class="overlay-title" style="color: var(--col-lowmid);">TIME RESUMED</div>
+        <p style="font-size: 1.2rem; margin-bottom: 20px;">Final Score: <span id="end-score" style="font-weight:bold;">0</span></p>
+        <button class="overlay-btn" onclick="app.exitToHome()">BACK TO TRACKLIST</button>
+    </div>
+
+    <script>
+        // --- 1. APP & UI STATE MANAGEMENT ---
+        const app = {
+            tracks: [], // Guarda as musicas da sessão na RAM (Não quebra o storage)
+            
+            init() {
+                this.typeIntro();
+                this.setupDragDrop();
+            },
+
+            typeIntro() {
+                const text = "You are the last villain our heroes will face.\nBefore the end, use your <span>Synesthesia</span> to freeze time.\nPlay your final symphony.\nDissect the sound.";
+                let i = 0;
+                const el = document.getElementById('introText');
+                function type() {
+                    if (i < text.length) {
+                        if(text.charAt(i) === '<') {
+                            let tag = "";
+                            while(text.charAt(i) !== '>') { tag += text.charAt(i); i++; }
+                            tag += '>'; el.innerHTML += tag; i++;
+                        } else if(text.charAt(i) === '\n') {
+                            el.innerHTML += '<br>'; i++;
+                        } else {
+                            el.innerHTML += text.charAt(i); i++;
+                        }
+                        setTimeout(type, 40);
+                    }
+                }
+                setTimeout(type, 500);
+            },
+
+            enterHome() {
+                document.getElementById('view-intro').classList.remove('active');
+                document.getElementById('view-home').classList.add('active');
+                
+                // Ativa AudioContext pela primeira vez após interação do usuário (Regra dos navegadores)
+                if(!game.audioCtx) game.initAudio();
+            },
+
+            exitToHome() {
+                game.stop();
+                document.getElementById('view-game').classList.remove('active');
+                document.getElementById('pauseMenu').classList.remove('active');
+                document.getElementById('endMenu').classList.remove('active');
+                document.getElementById('view-home').classList.add('active');
+            },
+
+            setupDragDrop() {
+                const zone = document.getElementById('dropZone');
+                zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+                zone.addEventListener('dragleave', e => zone.classList.remove('drag-over'));
+                zone.addEventListener('drop', e => {
+                    e.preventDefault(); zone.classList.remove('drag-over');
+                    if(e.dataTransfer.files.length > 0) this.addTrack(e.dataTransfer.files[0]);
+                });
+            },
+
+            handleAudioUpload(e) {
+                if(e.target.files.length > 0) this.addTrack(e.target.files[0]);
+                e.target.value = '';
+            },
+
+            addTrack(file) {
+                if(!file.type.startsWith('audio/')) { alert("Please drop a valid audio file (MP3/WAV)."); return; }
+                const url = URL.createObjectURL(file);
+                const track = { id: Date.now(), name: file.name.replace(/\.[^/.]+$/, ""), url: url };
+                this.tracks.push(track);
+                this.renderTrackList();
+            },
+
+            renderTrackList() {
+                const list = document.getElementById('trackList');
+                list.innerHTML = '';
+                this.tracks.forEach(track => {
+                    const el = document.createElement('div');
+                    el.className = 'track-item';
+                    el.innerHTML = `
+                        <span style="font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:70%;">${track.name}</span>
+                        <button class="track-play-btn" onclick="game.startSong('${track.url}')">PLAY</button>
+                    `;
+                    list.appendChild(el);
+                });
+            }
+        };
+
+        // --- 2. GAME ENGINE (SYNTHESIA SPECTRUM) ---
+        const game = {
+            audioCtx: null, analyser: null, source: null, delayNode: null,
+            audioEl: document.getElementById('gameAudio'),
+            canvas: document.getElementById('gameCanvas'), ctx: null,
+            
+            // Game Constants
+            lanes: 4, keys: ['d', 'f', 'j', 'k'],
+            colors: ['#ef4444', '#facc15', '#3b82f6', '#a855f7'],
+            delayTime: 1.8, // Segundos que a nota demora pra cair (Tempo de olhar pro futuro)
+            hitZoneY: 0, laneWidth: 0,
+            
+            // State
+            isPlaying: false, isPaused: false,
+            notes: [], score: 0, combo: 0, multiplier: 1,
+            particles: [], texts: [],
+            lastTime: 0, currentUrl: '',
+            
+            // Audio Analysis data
+            freqData: null,
+            cooldowns: [0, 0, 0, 0], // Evita notas coladas umas nas outras
+
+            initAudio() {
+                this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                this.analyser = this.audioCtx.createAnalyser();
+                this.analyser.fftSize = 512;
+                this.freqData = new Uint8Array(this.analyser.frequencyBinCount);
+                
+                // O Segredo da Engenharia: DelayNode!
+                // O analisador ouve a música AGORA e cria a nota no topo da tela.
+                // O jogador só vai ouvir a música 1.8 segundos depois, exatamente quando a nota bater no alvo!
+                this.delayNode = this.audioCtx.createDelay(5.0);
+                this.delayNode.delayTime.value = this.delayTime;
+
+                // Conexões: Áudio -> Analisador -> Delay -> Caixa de Som
+                this.source = this.audioCtx.createMediaElementSource(this.audioEl);
+                this.source.connect(this.analyser);
+                this.analyser.connect(this.delayNode);
+                this.delayNode.connect(this.audioCtx.destination);
+
+                this.ctx = this.canvas.getContext('2d');
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+                
+                // Input
+                window.addEventListener('keydown', e => this.handleInput(e.key.toLowerCase()));
+                
+                // Audio End
+                this.audioEl.addEventListener('ended', () => this.endSong());
+            },
+
+            resize() {
+                this.canvas.width = this.canvas.clientWidth;
+                this.canvas.height = this.canvas.clientHeight;
+                this.laneWidth = this.canvas.width / this.lanes;
+                this.hitZoneY = this.canvas.height - 120; // Hit zone position
+            },
+
+            startSong(url) {
+                if(this.audioCtx.state === 'suspended') this.audioCtx.resume();
+                this.currentUrl = url;
+                this.audioEl.src = url;
+                
+                document.getElementById('view-home').classList.remove('active');
+                document.getElementById('view-game').classList.add('active');
+                
+                this.resetState();
+                this.audioEl.play();
+                this.isPlaying = true;
+                
+                this.lastTime = performance.now();
+                requestAnimationFrame((t) => this.loop(t));
+            },
+
+            restartSong() {
+                document.getElementById('pauseMenu').classList.remove('active');
+                this.startSong(this.currentUrl);
+            },
+
+            stop() {
+                this.isPlaying = false;
+                this.audioEl.pause();
+            },
+
+            togglePause() {
+                if(!this.isPlaying) return;
+                this.isPaused = !this.isPaused;
+                const menu = document.getElementById('pauseMenu');
+                
+                if(this.isPaused) {
+                    this.audioEl.pause();
+                    menu.classList.add('active');
+                    document.getElementById('btn-pause').innerText = "RESUME";
+                } else {
+                    this.audioEl.play();
+                    menu.classList.remove('active');
+                    document.getElementById('btn-pause').innerText = "PAUSE";
+                    this.lastTime = performance.now(); // Prevents huge time jump
+                    requestAnimationFrame((t) => this.loop(t));
+                }
+            },
+
+            endSong() {
+                this.isPlaying = false;
+                document.getElementById('end-score').innerText = this.score;
+                document.getElementById('endMenu').classList.add('active');
+            },
+
+            resetState() {
+                this.notes = []; this.particles = []; this.texts = [];
+                this.score = 0; this.combo = 0; this.multiplier = 1; this.isPaused = false;
+                this.updateHUD();
+                document.getElementById('game-bg').className = '';
+            },
+
+            handleInput(key) {
+                if(!this.isPlaying || this.isPaused) return;
+                const lane = this.keys.indexOf(key);
+                if(lane === -1) return; // Wrong key
+
+                // Visual feedback de apertar a tecla (Efeito visual no alvo)
+                this.createHitFlash(lane);
+
+                // Verifica colisão
+                // A nota cai do topo (Y=0) até a base (Y=hitZoneY) em 'delayTime' segundos.
+                let hit = false;
+                const hitTolerance = 60; // Pixels de tolerancia
+
+                for(let i = 0; i < this.notes.length; i++) {
+                    const n = this.notes[i];
+                    if(n.lane === lane && !n.hit) {
+                        const dist = Math.abs(n.y - this.hitZoneY);
+                        if(dist < hitTolerance) {
+                            hit = true;
+                            n.hit = true; // Marca como acertada para não desenhar mais
+                            
+                            // Pontuação baseada na precisão
+                            let pts = dist < 20 ? 300 : 100;
+                            let msg = dist < 20 ? "PERFECT" : "GOOD";
+                            
+                            this.addScore(pts);
+                            this.createPopup(msg, lane, n.y, pts === 300 ? '#fff' : this.colors[lane]);
+                            this.spawnParticles(lane, this.hitZoneY);
+                            
+                            // Pulse do BG
+                            const bg = document.getElementById('game-bg');
+                            bg.classList.add('bg-pulse');
+                            setTimeout(() => bg.classList.remove('bg-pulse'), 100);
+                            break;
+                        }
+                    }
+                }
+
+                if(!hit) this.breakCombo();
+            },
+
+            addScore(pts) {
+                this.combo++;
+                if(this.combo > 10) this.multiplier = 2;
+                if(this.combo > 30) this.multiplier = 3;
+                if(this.combo > 50) this.multiplier = 4;
+                
+                this.score += pts * this.multiplier;
+                this.updateHUD();
+            },
+
+            breakCombo() {
+                if(this.combo > 5) this.createPopup("MISS", 1.5, this.hitZoneY - 50, '#ef4444');
+                this.combo = 0; this.multiplier = 1;
+                this.updateHUD();
+                
+                // Glitch effect na tela
+                document.body.classList.add('glitch-effect');
+                setTimeout(() => document.body.classList.remove('glitch-effect'), 200);
+            },
+
+            updateHUD() {
+                document.getElementById('ui-score').innerText = String(this.score).padStart(4, '0');
+                document.getElementById('ui-combo').innerText = this.combo;
+                document.getElementById('ui-combo').style.color = this.combo > 20 ? var(--brand-red) : '#fff';
+            },
+
+            // --- THE AUDIO ANALYSIS MAGIC ---
+            analyzeAudio() {
+                this.analyser.getByteFrequencyData(this.freqData);
+                
+                // Mapeamento das 4 Lanes (Grave ao Agudo)
+                const ranges = [
+                    { lane: 0, start: 2, end: 6, threshold: 220 },   // BASS (Bumbo/Baixo)
+                    { lane: 1, start: 10, end: 25, threshold: 180 }, // LOW-MID (Caixa/Voz grave)
+                    { lane: 2, start: 30, end: 70, threshold: 150 }, // HIGH-MID (Voz principal/Synths)
+                    { lane: 3, start: 100, end: 150, threshold: 120} // TREBLE (Pratos/Hi-hats)
+                ];
+
+                ranges.forEach(r => {
+                    let sum = 0;
+                    for(let i = r.start; i < r.end; i++) sum += this.freqData[i];
+                    let avg = sum / (r.end - r.start);
+
+                    // Reduz cooldown
+                    if(this.cooldowns[r.lane] > 0) this.cooldowns[r.lane]--;
+
+                    // Se o volume daquela frequencia bateu o pico e não tá em cooldown, cria a nota!
+                    if(avg > r.threshold && this.cooldowns[r.lane] === 0) {
+                        this.spawnNote(r.lane);
+                        this.cooldowns[r.lane] = 15; // Frames de cooldown (impede notas grudadas)
+                    }
+                });
+            },
+
+            spawnNote(lane) {
+                this.notes.push({
+                    lane: lane,
+                    y: 0,
+                    hit: false,
+                    color: this.colors[lane]
+                });
+            },
+
+            // --- VISUAL EFFECTS (CANVAS) ---
+            createHitFlash(lane) {
+                // Desenha um flash rápido no canvas que some aos poucos
+                this.particles.push({ type: 'flash', lane: lane, alpha: 1.0 });
+            },
+
+            createPopup(text, lane, y, color) {
+                this.texts.push({
+                    text: text,
+                    x: (lane * this.laneWidth) + (this.laneWidth / 2),
+                    y: y,
+                    alpha: 1.0, color: color
+                });
+            },
+
+            spawnParticles(lane, y) {
+                for(let i=0; i<8; i++) {
+                    this.particles.push({
+                        type: 'dot',
+                        x: (lane * this.laneWidth) + (this.laneWidth / 2),
+                        y: y,
+                        vx: (Math.random() - 0.5) * 10,
+                        vy: (Math.random() - 0.5) * 10 - 5,
+                        life: 1.0, color: this.colors[lane]
+                    });
+                }
+            },
+
+            // --- THE RENDER LOOP ---
+            loop(timestamp) {
+                if(!this.isPlaying || this.isPaused) return;
+
+                const dt = (timestamp - this.lastTime) / 1000; // Delta time em segundos
+                this.lastTime = timestamp;
+
+                // 1. Ouve a música no futuro e cria notas
+                this.analyzeAudio();
+
+                // 2. Limpa tela
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+                // 3. Desenha Alvos (Hit Zones)
+                for(let i=0; i<this.lanes; i++) {
+                    this.ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+                    this.ctx.lineWidth = 2;
+                    this.ctx.strokeRect(i * this.laneWidth + 10, this.hitZoneY, this.laneWidth - 20, 20);
+                }
+
+                // 4. Atualiza e Desenha Notas
+                const speed = this.canvas.height / this.delayTime; // Velocidade p/ cruzar a tela em 'delayTime'
+                
+                for(let i = this.notes.length - 1; i >= 0; i--) {
+                    let n = this.notes[i];
+                    if(n.hit) continue;
+
+                    n.y += speed * dt;
+
+                    // Desenha o bloco neon
+                    this.ctx.fillStyle = n.color;
+                    this.ctx.shadowColor = n.color;
+                    this.ctx.shadowBlur = 15;
+                    this.ctx.fillRect(n.lane * this.laneWidth + 15, n.y, this.laneWidth - 30, 25);
+                    this.ctx.shadowBlur = 0; // reseta
+
+                    // Errou a nota (Passou do fundo)
+                    if(n.y > this.canvas.height) {
+                        this.breakCombo();
+                        this.notes.splice(i, 1);
+                    }
+                }
+
+                // 5. Partículas e Efeitos
+                for(let i = this.particles.length - 1; i >= 0; i--) {
+                    let p = this.particles[i];
+                    if(p.type === 'flash') {
+                        p.alpha -= dt * 3;
+                        if(p.alpha <= 0) { this.particles.splice(i, 1); continue; }
+                        
+                        this.ctx.fillStyle = `rgba(255,255,255,${p.alpha * 0.5})`;
+                        this.ctx.fillRect(p.lane * this.laneWidth + 10, this.hitZoneY - 50, this.laneWidth - 20, 120);
+                    } else if(p.type === 'dot') {
+                        p.x += p.vx; p.y += p.vy; p.life -= dt * 2;
+                        if(p.life <= 0) { this.particles.splice(i, 1); continue; }
+                        
+                        this.ctx.fillStyle = p.color;
+                        this.ctx.globalAlpha = p.life;
+                        this.ctx.beginPath(); this.ctx.arc(p.x, p.y, 4, 0, Math.PI*2); this.ctx.fill();
+                        this.ctx.globalAlpha = 1.0;
+                    }
+                }
+
+                // 6. Textos Flutuantes (Perfect, Miss)
+                for(let i = this.texts.length - 1; i >= 0; i--) {
+                    let t = this.texts[i];
+                    t.y -= dt * 50; t.alpha -= dt * 1.5;
+                    if(t.alpha <= 0) { this.texts.splice(i, 1); continue; }
+                    
+                    this.ctx.fillStyle = t.color;
+                    this.ctx.globalAlpha = t.alpha;
+                    this.ctx.font = '900 24px Montserrat';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillText(t.text, t.x, t.y);
+                    this.ctx.globalAlpha = 1.0;
+                }
+
+                requestAnimationFrame((t) => this.loop(t));
+            }
+        };
+
+        window.onload = () => app.init();
+    </script>
+</body>
+</html>
