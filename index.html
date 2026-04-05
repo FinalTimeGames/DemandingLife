@@ -496,7 +496,9 @@
                 updateHUD() {
                     document.getElementById('ui-score').innerText = String(this.score).padStart(5, '0');
                     document.getElementById('ui-combo').innerText = this.combo;
-                    document.getElementById('ui-combo').style.color = this.combo > 20 ? var(--brand-red) : '#fff';
+                    
+                    // A LINHA CORRIGIDA ESTÁ AQUI:
+                    document.getElementById('ui-combo').style.color = this.combo > 20 ? 'var(--brand-red)' : '#fff';
                 },
 
                 analyzeAudio() {
