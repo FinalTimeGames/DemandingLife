@@ -36,7 +36,6 @@
         }
         .brand-container { display: flex; align-items: center; gap: 12px; cursor: pointer; transition: opacity 0.2s; }
         .brand-container:hover { opacity: 0.8; }
-        
         .nav-logo { height: 32px; width: auto; object-fit: contain; border-radius: 4px; }
         .brand { font-family: 'Montserrat', sans-serif; font-size: 1.4rem; font-weight: 900; color: #fff; letter-spacing: 1px; text-transform: uppercase; }
         .brand span { color: var(--brand-red); }
@@ -197,7 +196,7 @@
     </div>
 
     <script>
-        // Lógica de App
+        // Declarando a CONSTANTE do app (O nome DEVE ser igual ao que vai pro window)
         const dlApp = {
             tracks: [], 
             
@@ -273,7 +272,6 @@
                 this.tracks.forEach(track => {
                     const el = document.createElement('div');
                     el.className = 'track-item';
-                    // CORREÇÃO: Adicionando window.dlGame aqui na hora de gerar a lista
                     el.innerHTML = `
                         <span style="font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:70%; font-size: 1.1rem;">${track.name}</span>
                         <button class="track-play-btn" onclick="window.dlGame.startSong('${track.url}')">PLAY</button>
@@ -283,7 +281,7 @@
             }
         };
 
-        // Lógica da Engine do Jogo
+        // Declarando a CONSTANTE do game 
         const dlGame = {
             audioCtx: null, analyser: null, source: null, delayNode: null,
             audioEl: document.getElementById('gameAudio'),
@@ -342,7 +340,6 @@
                 document.getElementById('view-game').classList.add('active');
                 
                 this.resize();
-                
                 this.resetState();
                 this.audioEl.play();
                 this.isPlaying = true;
@@ -573,7 +570,7 @@
             }
         };
 
-        // AMARRAÇÃO DEFENITIVA DE ESCOPO GLOBAL
+        // AMARRAÇÃO PERFEITA NO WINDOW
         window.dlApp = dlApp;
         window.dlGame = dlGame;
         window.onload = () => window.dlApp.init();
