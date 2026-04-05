@@ -36,7 +36,7 @@
         }
         .brand-container { display: flex; align-items: center; gap: 12px; cursor: pointer; transition: opacity 0.2s; }
         .brand-container:hover { opacity: 0.8; }
-        /* O logo que você vai subir no Git */
+        
         .nav-logo { height: 32px; width: auto; object-fit: contain; border-radius: 4px; }
         .brand { font-family: 'Montserrat', sans-serif; font-size: 1.4rem; font-weight: 900; color: #fff; letter-spacing: 1px; text-transform: uppercase; }
         .brand span { color: var(--brand-red); }
@@ -45,13 +45,10 @@
         /* --- BACKGROUND ART --- */
         #game-bg {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            /* A arte que você vai subir no Git */
             background: url('roof-bg.jpg') center/cover no-repeat;
-            /* Filtro pesado para focar no show neon */
             filter: brightness(0.2) contrast(1.3) grayscale(0.3);
             z-index: 1; transition: filter 0.05s ease-out;
         }
-        /* O pulso de luz quando acerta uma nota */
         .bg-pulse { filter: brightness(0.7) contrast(1.5) grayscale(0) !important; }
 
         /* --- VIEWS --- */
@@ -124,7 +121,7 @@
 <body>
 
     <nav class="game-nav">
-        <div class="brand-container" onclick="app.exitToHome()">
+        <div class="brand-container" onclick="window.dlApp.exitToHome()">
             <img src="logo.png" alt="Logo" class="nav-logo" onerror="this.style.display='none'">
             <div class="brand">DEMANDING <span>LIFE</span></div>
         </div>
@@ -135,7 +132,7 @@
 
     <main id="view-intro" class="view active">
         <div class="intro-text" id="introText"></div>
-        <button class="btn-epic" onclick="app.enterHome()">FREEZE TIME & PLAY</button>
+        <button class="btn-epic" onclick="window.dlApp.enterHome()">FREEZE TIME & PLAY</button>
     </main>
 
     <main id="view-home" class="view">
@@ -149,7 +146,7 @@
                     <p style="font-size: 0.85rem; color: #aaa;">Or click to browse. Learn to isolate frequencies.</p>
                 </div>
             </label>
-            <input type="file" id="audioUpload" accept="audio/*" onchange="app.handleAudioUpload(event)">
+            <input type="file" id="audioUpload" accept="audio/*" onchange="window.dlApp.handleAudioUpload(event)">
 
             <div class="track-list" id="trackList">
                 <p style="text-align:center; color:#666; margin-top:30px; font-size:0.95rem; font-weight: 600;">No tracks loaded in this session.</p>
@@ -170,7 +167,7 @@
                 </div>
             </div>
             <div class="hud-controls">
-                <button onclick="game.togglePause()" id="btn-pause">PAUSE</button>
+                <button onclick="window.dlGame.togglePause()" id="btn-pause">PAUSE</button>
             </div>
         </div>
 
@@ -188,20 +185,20 @@
 
     <div id="pauseMenu" class="overlay-menu">
         <div class="overlay-title">TIME FROZEN</div>
-        <button class="overlay-btn" onclick="game.togglePause()">RESUME SHOW</button>
-        <button class="overlay-btn" onclick="game.restartSong()">RESTART SONG</button>
-        <button class="overlay-btn" style="background: transparent; border: 2px solid #555; color:#fff;" onclick="app.exitToHome()">QUIT TO HOME</button>
+        <button class="overlay-btn" onclick="window.dlGame.togglePause()">RESUME SHOW</button>
+        <button class="overlay-btn" onclick="window.dlGame.restartSong()">RESTART SONG</button>
+        <button class="overlay-btn" style="background: transparent; border: 2px solid #555; color:#fff;" onclick="window.dlApp.exitToHome()">QUIT TO HOME</button>
     </div>
 
     <div id="endMenu" class="overlay-menu">
         <div class="overlay-title" style="color: var(--col-lowmid);">SHOW ENDED</div>
         <p style="font-size: 1.5rem; margin-bottom: 30px; font-weight: 600;">Final Score: <span id="end-score" style="font-weight:900; color: #fff;">0</span></p>
-        <button class="overlay-btn" onclick="app.exitToHome()">BACK TO TRACKLIST</button>
+        <button class="overlay-btn" onclick="window.dlApp.exitToHome()">BACK TO TRACKLIST</button>
     </div>
 
     <script>
-        // Declaramos variáveis em VAR e as conectamos ao WINDOW para evitar bugs de escopo (O botão vermelho nunca mais falhará)
-        var app = {
+        // Lógica de App
+        const dlApp = {
             tracks: [], 
             
             init() {
@@ -235,11 +232,11 @@
                 document.getElementById('view-intro').classList.remove('active');
                 document.getElementById('view-home').classList.add('active');
                 
-                if(!window.game.audioCtx) window.game.initAudio();
+                if(!window.dlGame.audioCtx) window.dlGame.initAudio();
             },
 
             exitToHome() {
-                window.game.stop();
+                window.dlGame.stop();
                 document.getElementById('view-game').classList.remove('active');
                 document.getElementById('pauseMenu').classList.remove('active');
                 document.getElementById('endMenu').classList.remove('active');
@@ -276,16 +273,18 @@
                 this.tracks.forEach(track => {
                     const el = document.createElement('div');
                     el.className = 'track-item';
+                    // CORREÇÃO: Adicionando window.dlGame aqui na hora de gerar a lista
                     el.innerHTML = `
                         <span style="font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:70%; font-size: 1.1rem;">${track.name}</span>
-                        <button class="track-play-btn" onclick="window.game.startSong('${track.url}')">PLAY</button>
+                        <button class="track-play-btn" onclick="window.dlGame.startSong('${track.url}')">PLAY</button>
                     `;
                     list.appendChild(el);
                 });
             }
         };
 
-        var game = {
+        // Lógica da Engine do Jogo
+        const dlGame = {
             audioCtx: null, analyser: null, source: null, delayNode: null,
             audioEl: document.getElementById('gameAudio'),
             canvas: document.getElementById('gameCanvas'), ctx: null,
@@ -307,7 +306,6 @@
                 try {
                     this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                     this.analyser = this.audioCtx.createAnalyser();
-                    // Matemática premium: 2048 de fftSize nos permite isolar graves perfeitamente
                     this.analyser.fftSize = 2048; 
                     this.freqData = new Uint8Array(this.analyser.frequencyBinCount);
                     
@@ -343,7 +341,6 @@
                 document.getElementById('view-home').classList.remove('active');
                 document.getElementById('view-game').classList.add('active');
                 
-                // CORREÇÃO: Garante que o Canvas seja medido apenas AGORA que está visível na tela
                 this.resize();
                 
                 this.resetState();
@@ -403,7 +400,7 @@
                 this.createHitFlash(lane);
 
                 let hit = false;
-                const hitTolerance = 80; // Zona de colisão justa e viciante
+                const hitTolerance = 80; 
 
                 for(let i = 0; i < this.notes.length; i++) {
                     const n = this.notes[i];
@@ -420,7 +417,6 @@
                             this.createPopup(msg, lane, n.y, pts === 300 ? '#fff' : this.colors[lane]);
                             this.spawnParticles(lane, this.hitZoneY);
                             
-                            // Pulse Épico de Fundo!
                             const bg = document.getElementById('game-bg');
                             bg.classList.add('bg-pulse');
                             setTimeout(() => bg.classList.remove('bg-pulse'), 120);
@@ -460,12 +456,11 @@
             analyzeAudio() {
                 this.analyser.getByteFrequencyData(this.freqData);
                 
-                // Mapeamento Cirúrgico: 2048 bins = ~21.5Hz por bin
                 const ranges = [
-                    { lane: 0, start: 1, end: 5, threshold: 210 },   // BASS (20Hz - 100Hz)
-                    { lane: 1, start: 5, end: 15, threshold: 180 },  // LOW-MID (100Hz - 300Hz)
-                    { lane: 2, start: 15, end: 50, threshold: 140 }, // HIGH-MID (300Hz - 1000Hz)
-                    { lane: 3, start: 50, end: 200, threshold: 110}  // TREBLE (1000Hz+)
+                    { lane: 0, start: 1, end: 5, threshold: 210 },   
+                    { lane: 1, start: 5, end: 15, threshold: 180 },  
+                    { lane: 2, start: 15, end: 50, threshold: 140 }, 
+                    { lane: 3, start: 50, end: 200, threshold: 110}  
                 ];
 
                 ranges.forEach(r => {
@@ -477,7 +472,7 @@
 
                     if(avg > r.threshold && this.cooldowns[r.lane] === 0) {
                         this.spawnNote(r.lane);
-                        this.cooldowns[r.lane] = 12; // Frames de bloqueio
+                        this.cooldowns[r.lane] = 12; 
                     }
                 });
             },
@@ -519,7 +514,6 @@
                 this.analyzeAudio();
                 this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-                // Desenha os Alvos em Neon
                 for(let i=0; i<this.lanes; i++) {
                     this.ctx.strokeStyle = 'rgba(255,255,255,0.3)';
                     this.ctx.lineWidth = 3;
@@ -579,10 +573,10 @@
             }
         };
 
-        // Amarração blindada no Global Object do navegador
-        window.app = app;
-        window.game = game;
-        window.onload = () => window.app.init();
+        // AMARRAÇÃO DEFENITIVA DE ESCOPO GLOBAL
+        window.dlApp = dlApp;
+        window.dlGame = dlGame;
+        window.onload = () => window.dlApp.init();
     </script>
 </body>
 </html>
